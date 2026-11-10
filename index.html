@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vocabulary PWA</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ffffff">
+</head>
+<body>
+    <!-- App Loading & Entry Screens -->
+    <div id="loader" style="display:flex; justify-content:center; align-items:center; height:100vh;">
+        <h2>Loading Data...</h2>
+    </div>
+    
+    <div id="entry-screen" class="hidden" style="display:none; flex-direction:column; align-items:center; justify-content:center; height:100vh; padding: 20px;">
+        <h1 style="color: var(--primary); margin-bottom: 20px;">Vocab Builder</h1>
+        <div id="dataset-list" style="display:flex; flex-direction:column; gap: 15px; width: 100%; max-width: 400px;"></div>
+    </div>
+
+    <!-- Dashboard Screen -->
+    <div id="dashboard" class="hidden" style="display:none; flex-direction:column; padding: 20px; max-width: 1000px; margin: 0 auto;">
+        <header style="box-shadow:none; padding: 0 0 20px 0;">
+            <h1>Dashboard</h1>
+            <button id="btn-reload" style="display:none;">Reload</button>
+        </header>
+        <div style="display:flex; gap: 15px; margin-bottom: 20px; font-weight: bold; color: var(--text-main);">
+            <div>Score: <span id="dash-score" style="color: var(--primary);">0</span></div>
+            <div>Streak: <span id="streak" style="color: var(--primary);">0</span></div>
+            <div>Mastered: <span id="dash-mastered" style="color: var(--primary);">0</span></div>
+            <div id="dash-review-mistakes" style="display:none; cursor: pointer; color: var(--wrong);" onclick="enterApp('memory')">
+                Review Mistakes: <span id="dash-mistake-count">0</span>
+            </div>
+        </div>
+        <div id="deck-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;"></div>
+    </div>
+
+    <!-- Main UI (Tabs & Modes) -->
+    <div id="main-ui" style="display:none; flex-direction:column; height:100vh;">
+        <header>
+            <h1>Vocab Builder</h1>
+            <nav>
+                <button id="nav-flashcards" class="active">Flashcards</button>
+                <button id="nav-search">Dictionary</button>
+                <button id="nav-crossword">Crossword</button>
+            </nav>
+            <select id="dataset-selector">
+                <option value="barron800">Barron's 800</option>
+                <option value="barron1500">Barron's 1500</option>
+                <option value="gre3000">GRE 3000</option>
+                <option value="gre5349">GRE Master 5349</option>
+                <option value="idioms">Master Idioms</option>
+            </select>
+        </header>
+
+        <main id="touch-surface">
+            <!-- Flashcard Mode -->
+            <section id="mode-flashcards" class="view-section active">
+                <div style="text-align:center; margin-bottom:10px;">
+                    <span id="question-type-badge" style="display:none; background:var(--primary); color:white; padding:4px 10px; border-radius:12px; font-size:0.8rem; font-weight:bold;"></span>
+                </div>
+                
+                <div class="flashcard" id="flashcard">
+                    <div class="front">
+                        <h2 id="word-display">Loading...</h2>
+                    </div>
+                    <div class="back hidden" id="definition-display">
+                        <p id="word-def"></p>
+                        <p id="word-context" class="context"></p>
+                    </div>
+                    
+                    <!-- Native Google Image Search Button Container for Flashcards -->
+                    <div id="hint-box" style="margin-top: 20px; width: 100%;"></div>
+                </div>
+
+                <div id="options-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px; width: 100%; max-width: 600px; margin-left: auto; margin-right: auto;"></div>
+                
+                <div class="controls">
+                    <button id="btn-prev">Previous</button>
+                    <button id="btn-flip">Flip</button>
+                    <button id="btn-next">Next</button>
+                </div>
+            </section>
+
+            <!-- Dictionary Search Mode -->
+            <section id="mode-search" class="view-section hidden">
+                <input type="text" id="search-input" placeholder="Search vocabulary...">
+                <ul id="search-results"></ul>
+            </section>
+
+            <!-- Crossword Mode -->
+            <section id="mode-crossword" class="view-section hidden">
+                <div class="crossword-controls">
+                    <button id="btn-load-crossword">Fetch Crossword from GitHub</button>
+                    <span id="crossword-status"></span>
+                </div>
+                
+                <div class="crossword-layout">
+                    <div id="crossword-grid" class="grid-container">
+                        <!-- Grid cells generated dynamically via JS -->
+                    </div>
+                    
+                    <div class="crossword-sidebar">
+                        <div id="active-clue-display" class="clue-card">
+                            <h3>Current Clue</h3>
+                            <p id="current-clue-text">Select a cell to view clue.</p>
+                            
+                            <!-- Hidden image tag to satisfy JS logic, replaced dynamically with Search Button -->
+                            <img id="current-clue-image" class="hidden" src="" alt="Clue context" style="display:none;">
+                            <div id="google-img-search-btn"></div>
+                        </div>
+                        
+                        <div class="clue-lists">
+                            <div class="clue-column">
+                                <h3>Across</h3>
+                                <ul id="clues-across"></ul>
+                            </div>
+                            <div class="clue-column">
+                                <h3>Down</h3>
+                                <ul id="clues-down"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
