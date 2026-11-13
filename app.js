@@ -1,19 +1,51 @@
 // ==========================================
-// IMAGE API CONFIGURATION & ENGINE (KEYLESS PWA)
+// IMAGE API CONFIGURATION (KEYLESS GOOGLE SCRAPER + FALLBACKS)
 // ==========================================
 async function fetchContextualImage(wordRef, definition, isRegenerate = false, keyword = '') {
     // 1. Build a waterfall of search queries
     const cleanWords = definition.replace(/[^a-zA-Z\s]/g, '').split(' ').filter(w => w.length > 3);
-    const brokenDef = cleanWords.slice(0, 2).join(' '); // Extracts up to 2 significant keywords
+    const brokenDef = cleanWords.slice(0, 2).join(' '); 
     
-    // NEW: Put keyword first in the list so it is searched primarily if available
-    let queries = [keyword, wordRef, brokenDef, definition].filter(q => q && q.trim().length > 0);
+    // Put keyword first in the list so it is searched primarily if available
+    let queries = [keyword, wordRef, brokenDef].filter(q => q && q.trim().length > 0);
     
-    // 2. Introduce randomness for the "Tap to Regenerate" feature
     if (isRegenerate) {
         queries = queries.sort(() => Math.random() - 0.5);
     }
     
+    // ==========================================
+    // ENGINE 1: KEYLESS GOOGLE IMAGES SCRAPER (Via CORS Proxy)
+    // ==========================================
+    for (let query of queries) {
+        try {
+            // We must route through a CORS proxy because browsers block direct Google scraping
+            let googleUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(query + " high quality")}`;
+            let proxyUrl = `https://corsproxy.io/?${encodeURIComponent(googleUrl)}`;
+            
+            let res = await fetch(proxyUrl);
+            let htmlText = await res.text();
+            
+            // Scrape the raw HTML for the first valid thumbnail image (usually hosted on gstatic)
+            let imgMatches = htmlText.match(/<img[^>]+src="([^">]+)"/g);
+            if (imgMatches) {
+                // If regenerating, pick a random image from the top 5 results. Otherwise, pick the first.
+                let startIndex = isRegenerate ? Math.floor(Math.random() * Math.min(5, imgMatches.length)) : 0;
+                
+                for (let i = startIndex; i < imgMatches.length; i++) {
+                    let srcMatch = imgMatches[i].match(/src="([^">]+)"/);
+                    if (srcMatch && srcMatch[1].startsWith('http') && !srcMatch[1].includes('branding') && !srcMatch[1].includes('logo')) {
+                        return srcMatch[1]; 
+                    }
+                }
+            }
+        } catch (e) {
+             console.warn(`Keyless Google scrape failed for: ${query}`, e);
+        }
+    }
+    
+    // ==========================================
+    // ENGINE 2: WIKIPEDIA FALLBACK
+    // ==========================================
     for (let query of queries) {
         let encoded = encodeURIComponent(query);
         try {
@@ -24,24 +56,23 @@ async function fetchContextualImage(wordRef, definition, isRegenerate = false, k
             
             if (pageId !== "-1" && pages[pageId].thumbnail) {
                 let imgUrl = pages[pageId].thumbnail.source;
-                // VALIDATION: Reject Wikipedia's generic SVG icons, disambiguation graphics, UI placeholders, and Wikibooks logos
                 let lowerUrl = imgUrl.toLowerCase();
-                if (!lowerUrl.includes('.svg') && 
-                    !lowerUrl.includes('ambox') && 
-                    !lowerUrl.includes('wiktionary') && 
-                    !lowerUrl.includes('disambig') &&
-                    !lowerUrl.includes('wikibooks') && 
-                    !lowerUrl.includes('wikiquote') && 
-                    !lowerUrl.includes('commons-logo')) {
+                
+                // AGGRESSIVE BLACKLIST: Rejects Wikibooks logos, icons, and placeholder UI graphics
+                let isBlacklisted = ['svg', 'ambox', 'wiktionary', 'disambig', 'wikibooks', 'wikiquote', 'commons-logo', 'book', 'dictionary', 'icon', 'logo', 'text'].some(term => lowerUrl.includes(term));
+                
+                if (!isBlacklisted) {
                     return imgUrl;
                 }
             }
         } catch (e) {
-             console.warn(`Wikimedia fetch failed for query: ${query}`, e);
+             console.warn(`Wikimedia fallback failed for query: ${query}`, e);
         }
     }
     
-    // Final Fallback: Picsum Word Seed (Always generates an abstract but consistent image)
+    // ==========================================
+    // ENGINE 3: FINAL ABSTRACT FALLBACK
+    // ==========================================
     let safeWordSeed = isRegenerate
          ? wordRef.replace(/[^a-zA-Z0-9]/g, '') + Math.floor(Math.random() * 1000)
          : wordRef.replace(/[^a-zA-Z0-9]/g, '');
@@ -118,15 +149,13 @@ function renderDecks() {
             <div class="deck-progress-bar"><div class="deck-progress-fill" style="width: ${progressPct}%"></div></div>
         `;
         
-        // Target specifically completed decks
         if (progressPct >= 100) {
             var restartBtn = document.createElement('button');
             restartBtn.innerText = 'Restart Deck';
             restartBtn.style.cssText = 'margin-top: 10px; padding: 6px 12px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; font-family: inherit;';
             restartBtn.onclick = function(e) {
-                e.stopPropagation(); // Prevent launching the deck immediately
+                e.stopPropagation(); 
                 
-                // Clear out performance data for this specific word group
                 d.words.forEach(w => {
                     pData.mastered = pData.mastered.filter(m => m !== w.word);
                     pData.mistakes = pData.mistakes.filter(m => m !== w.word);
@@ -371,9 +400,6 @@ function displayQuestion(qObj) {
     }
     document.getElementById('word-display').innerText = qObj.displayPrompt;
     
-    // ==========================================
-    // RENDER IMAGE (SMART KEYLESS FETCH ENGINE)
-    // ==========================================
     var hintBox = document.getElementById('hint-box');
     var hintImg = document.getElementById('hint-img');
     
@@ -400,17 +426,14 @@ function displayQuestion(qObj) {
         hintImg.style.display = 'block';
     };
     
-    // Execute Data.js Custom Image Override OR run the Keyless Fetcher
     if (qObj.target.customImage) {
         tempImg.src = qObj.target.customImage;
     } else {
-        // NEW: Passing qObj.target.keyword mapped from dataset to fetchContextualImage
         fetchContextualImage(qObj.wordRef, qObj.target.def, false, qObj.target.keyword).then(url => {
             tempImg.src = url;
         });
     }
     
-    // TAP TO REGENERATE: Forces the API to shuffle the query array and pull a new result
     hintBox.onclick = function() {
         if (!canAnswer) return;
         hintImg.style.display = 'none';
@@ -428,16 +451,12 @@ function displayQuestion(qObj) {
         if (qObj.target.customImage) {
             newTempImg.src = qObj.target.customImage;
         } else {
-            // NEW: Passing qObj.target.keyword to fetchContextualImage
             fetchContextualImage(qObj.wordRef, qObj.target.def, true, qObj.target.keyword).then(url => {
                 newTempImg.src = url;
             });
         }
     };
     
-    // ==========================================
-    // OPTIONS & ANSWER HANDLING
-    // ==========================================
     var list = document.getElementById('options-list');
     list.innerHTML = '';
     let pData = appData.progress[activeDatasetId];
