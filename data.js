@@ -102,13 +102,10 @@ function selectDataset(id) {
     }
     document.getElementById('dataset-list').style.display = 'none';
     document.getElementById('btn-reload').style.display = 'inline-block';
-    if (appData.caches[activeDatasetId]) {
-        parseAndChunk(appData.caches[activeDatasetId]);
-        document.getElementById('dashboard').style.display = 'flex';
-        document.getElementById('entry-screen').style.display = 'none';
-    } else {
-        forceRefreshLibrary();
-    }
+    
+    // DEV OVERRIDE: Always force refresh the dataset from the CSV file rather than loading the old cache, 
+    // guaranteeing any new keywords added to the file are parsed immediately.
+    forceRefreshLibrary();
 }
 
 function forceRefreshLibrary() {
@@ -169,25 +166,31 @@ function parseAndChunk(raw) {
     }
     
     for (let i = 0; i < rows.length; i++) {
-        let word = rows[i][0];
-        let def = rows[i][1];
-        let extraData = rows[i][2] || '';
-        let keyword = rows[i][3] || ''; // NEW: Extract the keyword from the 4th column
+        let word = rows[i][0] || '';
+        let def = rows[i][1] || '';
+        let col3 = rows[i][2] || '';
+        let col4 = rows[i][3] || '';
         
         let extra = '';
         let customImage = null;
+        let keyword = '';
         
         if(word && def) {
-            word = word.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').replace(/^"|"\$/g, '').trim();
-            def = def.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').replace(/^"|"\$/g, '').trim();
-            extraData = extraData.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').replace(/^"|"\$/g, '').trim();
-            keyword = keyword.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').replace(/^"|"\$/g, '').trim(); // NEW: Clean keyword text
+            word = word.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').replace(/^"|"$/g, '').trim();
+            def = def.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').replace(/^"|"$/g, '').trim();
+            col3 = col3.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').replace(/^"|"$/g, '').trim();
+            col4 = col4.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').replace(/^"|"$/g, '').trim();
             
-            // Detect URLs to safely separate custom images from standard textual contexts
-            if (extraData.startsWith('http') || extraData.startsWith('data:image')) {
-                customImage = extraData;
-            } else {
-                extra = extraData;
+            // Flexibly detect if the CSV has 3 or 4 columns and assign appropriately
+            if (col4) {
+                extra = col3;
+                keyword = col4;
+            } else if (col3) {
+                if (col3.startsWith('http') || col3.startsWith('data:image')) {
+                    customImage = col3;
+                } else {
+                    keyword = col3; // If only 3 columns, assume it's the keyword
+                }
             }
             
             if (word.length > 1 && def.length > 1 && word.toLowerCase() !== "word" && word.toLowerCase() !== "idiom") {
@@ -196,7 +199,7 @@ function parseAndChunk(raw) {
                     def: def,
                     extra: extra,
                     customImage: customImage,
-                    keyword: keyword // NEW: Store the keyword in the dataset object
+                    keyword: keyword 
                 });
             }
         }

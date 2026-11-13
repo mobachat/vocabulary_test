@@ -24,9 +24,15 @@ async function fetchContextualImage(wordRef, definition, isRegenerate = false, k
             
             if (pageId !== "-1" && pages[pageId].thumbnail) {
                 let imgUrl = pages[pageId].thumbnail.source;
-                // VALIDATION: Reject Wikipedia's generic SVG icons, disambiguation graphics, and UI placeholders
+                // VALIDATION: Reject Wikipedia's generic SVG icons, disambiguation graphics, UI placeholders, and Wikibooks logos
                 let lowerUrl = imgUrl.toLowerCase();
-                if (!lowerUrl.includes('.svg') && !lowerUrl.includes('ambox') && !lowerUrl.includes('wiktionary') && !lowerUrl.includes('disambig')) {
+                if (!lowerUrl.includes('.svg') && 
+                    !lowerUrl.includes('ambox') && 
+                    !lowerUrl.includes('wiktionary') && 
+                    !lowerUrl.includes('disambig') &&
+                    !lowerUrl.includes('wikibooks') && 
+                    !lowerUrl.includes('wikiquote') && 
+                    !lowerUrl.includes('commons-logo')) {
                     return imgUrl;
                 }
             }
@@ -62,10 +68,9 @@ function buildDatasetMenu() {
     listContainer.innerHTML = '';
     
     DATASETS.forEach(ds => {
-        let isCached = appData.caches && appData.caches[ds.id];
         let progress = appData.progress[ds.id] || {};
         let score = progress.score || 0;
-        let statusText = isCached ? `Score: ${score}` : "Requires Download";
+        let statusText = `Score: ${score}`;
         
         let btn = document.createElement('button');
         btn.className = 'dataset-btn';
