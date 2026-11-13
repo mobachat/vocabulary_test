@@ -1,500 +1,156 @@
-/* ==========================================
-   BASE & TYPOGRAPHY
-   ========================================== */
+/* =========================================
+   THEME VARIABLES ENGINE
+========================================= */
 :root {
-    --primary: #10b981;
-    --primary-dark: #059669;
-    --bg-color: #f8fafc;
-    --card-bg: #ffffff;
-    --text-main: #1e293b;
-    --text-muted: #64748b;
-    --border: #e2e8f0;
-    --wrong: #ef4444;
-    --correct: #10b981;
+    /* Default Dark Theme */
+    --bg-color: #1e1b4b;
+    --bg-dark: #09090b;
+    --card-bg: rgba(24, 24, 27, 0.7);
+    --primary: #38bdf8;
+    --secondary: #818cf8;
+    --accent: #f472b6;
+    --success: #10b981;
+    --error: #f43f5e;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --border-light: rgba(255, 255, 255, 0.1);
+    --border-heavy: rgba(255, 255, 255, 0.2);
 }
 
+/* Light Theme */
 body.theme-light {
-    --primary: #3b82f6;
-    --primary-dark: #2563eb;
-    --bg-color: #f1f5f9;
-    --card-bg: #ffffff;
+    --bg-color: #cbd5e1;
+    --bg-dark: #f8fafc;
+    --card-bg: rgba(255, 255, 255, 0.95);
+    --primary: #0284c7;
+    --secondary: #4f46e5;
+    --text-main: #0f172a;
+    --text-muted: #475569;
+    --border-light: rgba(0, 0, 0, 0.1);
+    --border-heavy: rgba(0, 0, 0, 0.2);
 }
 
+/* Midnight Blue Theme */
 body.theme-blue {
-    --primary: #6366f1;
-    --primary-dark: #4f46e5;
-    --bg-color: #eef2ff;
-    --card-bg: #ffffff;
+    --bg-color: #0f172a;
+    --bg-dark: #020617;
+    --card-bg: rgba(15, 23, 42, 0.8);
+    --primary: #38bdf8;
+    --secondary: #3b82f6;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
 }
 
+/* Forest Theme */
 body.theme-forest {
-    --primary: #059669;
-    --primary-dark: #047857;
-    --bg-color: #ecfdf5;
-    --card-bg: #ffffff;
+    --bg-color: #064e3b;
+    --bg-dark: #022c22;
+    --card-bg: rgba(6, 78, 59, 0.75);
+    --primary: #34d399;
+    --secondary: #10b981;
+    --text-main: #f0fdf4;
+    --text-muted: #a7f3d0;
 }
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    -webkit-tap-highlight-color: transparent;
+/* =========================================
+   BASE STYLES
+========================================= */
+* { 
+    box-sizing: border-box; 
+    -webkit-tap-highlight-color: transparent; 
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-main);
-    line-height: 1.5;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    transition: background-color 0.3s;
-}
-
-/* ==========================================
-   HEADER & NAVIGATION
-   ========================================== */
-header {
-    background-color: var(--card-bg);
-    padding: 15px 20px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    z-index: 10;
-}
-
-h1 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--primary);
-    margin: 0;
-}
-
-nav {
-    display: flex;
-    gap: 10px;
-}
-
-nav button {
-    background: none;
-    border: none;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    cursor: pointer;
-    padding: 5px 10px;
-    border-radius: 6px;
-    transition: all 0.2s;
-}
-
-nav button.active {
-    color: var(--primary);
-    background-color: rgba(16, 185, 129, 0.1);
-}
-
-select {
-    padding: 8px 12px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background-color: var(--bg-color);
-    color: var(--text-main);
-    font-size: 0.9rem;
-    font-weight: 500;
-    outline: none;
-}
-
-/* ==========================================
-   MAIN LAYOUT & SECTIONS
-   ========================================== */
-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    overflow: hidden;
-}
-
-.view-section {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 20px;
-    overflow-y: auto;
-    width: 100%;
-    max-width: 1000px;
-    margin: 0 auto;
-}
-
-.hidden {
-    display: none !important;
-}
-
-/* ==========================================
-   FLASHCARD MODE
-   ========================================== */
-.flashcard {
-    flex: 1;
-    background-color: var(--card-bg);
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 30px;
-    margin-bottom: 20px;
-    position: relative;
-    perspective: 1000px;
-}
-
-.flashcard .front, .flashcard .back {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
-
-#word-display {
-    font-size: 2.5rem;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    color: var(--text-main);
-    margin-bottom: 10px;
-    word-break: break-word;
-}
-
-#word-def {
-    font-size: 1.25rem;
-    font-weight: 500;
-    color: var(--text-main);
-    margin-bottom: 15px;
-}
-
-.context {
-    font-size: 1rem;
-    color: var(--text-muted);
-    font-style: italic;
-    background-color: var(--bg-color);
-    padding: 15px;
-    border-radius: 8px;
-    border-left: 4px solid var(--primary);
-    width: 100%;
-}
-
-.controls {
-    display: flex;
-    gap: 15px;
-    justify-content: center;
-    padding-bottom: 20px;
-}
-
-.controls button {
-    flex: 1;
-    max-width: 120px;
-    padding: 14px 20px;
-    border: none;
-    border-radius: 12px;
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: transform 0.1s, opacity 0.2s;
-    background-color: var(--card-bg);
-    color: var(--text-main);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-}
-
-.controls button:active {
-    transform: scale(0.96);
-}
-
-#btn-flip {
-    background-color: var(--primary);
-    color: white;
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-}
-
-/* ==========================================
-   DICTIONARY / SEARCH MODE
-   ========================================== */
-#mode-search {
-    align-items: center;
-}
-
-#search-input {
-    width: 100%;
-    max-width: 600px;
-    padding: 15px 20px;
-    font-size: 1.1rem;
-    border: 2px solid var(--border);
-    border-radius: 12px;
-    outline: none;
-    transition: border-color 0.2s;
-    margin-bottom: 20px;
-    background-color: var(--card-bg);
-}
-
-#search-input:focus {
-    border-color: var(--primary);
-}
-
-#search-results {
-    width: 100%;
-    max-width: 600px;
-    list-style: none;
-    overflow-y: auto;
-    flex: 1;
-}
-
-#search-results li {
-    background-color: var(--card-bg);
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.03);
-}
-
-#search-results li strong {
-    display: block;
-    font-size: 1.1rem;
-    color: var(--primary);
-    margin-bottom: 5px;
-}
-
-/* ==========================================
-   CROSSWORD MODE
-   ========================================== */
-#mode-crossword {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    overflow: hidden;
-    padding: 10px;
-}
-
-.crossword-controls {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    margin-bottom: 15px;
-    flex-shrink: 0;
-}
-
-#btn-load-crossword {
-    padding: 10px 15px;
-    background-color: var(--primary);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    font-size: 0.9rem;
-}
-
-#crossword-status {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    font-weight: 500;
-}
-
-.crossword-layout {
-    display: flex;
-    gap: 20px;
-    flex: 1;
-    overflow: hidden;
-}
-
-/* Grid Area */
-.grid-container {
-    flex: 1;
-    background-color: var(--card-bg);
-    border-radius: 12px;
-    padding: 15px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: auto;
-}
-
-#crossword-grid table {
-    border-collapse: collapse;
-    background-color: #000;
-    border: 2px solid #000;
-}
-
-#crossword-grid td {
-    width: 35px;
-    height: 35px;
+    font-family: 'Inter', system-ui, sans-serif;
+    background: radial-gradient(circle at top center, var(--bg-color), var(--bg-dark));
+    background-attachment: fixed; 
+    color: var(--text-main); 
+    margin: 0; 
     padding: 0;
-    position: relative;
-    border: 1px solid #333;
+    display: flex; 
+    justify-content: center; 
+    align-items: flex-start; 
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background 0.5s ease, color 0.5s ease;
 }
 
-#crossword-grid td.empty {
-    background-color: #000;
-}
+/* Pseudo-Fullscreen Fallback for Google Sites restriction */
+body.pseudo-fullscreen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; z-index: 99999; margin: 0; padding: 0; overflow: hidden; border-radius: 0; }
+body.pseudo-fullscreen .app-container { margin-top: 0; max-width: 100%; padding: 10px; height: 100%; display: flex; flex-direction: column; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+body.pseudo-fullscreen #main-ui { flex-grow: 1; display: flex; flex-direction: column; }
+body.pseudo-fullscreen .quiz-card { flex-grow: 1; }
 
-#crossword-grid td.letter-cell {
-    background-color: #fff;
-    cursor: pointer;
-}
+.app-container { width: 100%; max-width: 1000px; padding: 15px; display: flex; flex-direction: column; gap: 15px; margin-top: env(safe-area-inset-top, 15px); }
 
-#crossword-grid td.letter-cell.highlight-word {
-    background-color: #e0f2fe; /* Light blue for active word */
-}
+/* Overlays */
+.fullscreen-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-dark); z-index: 200; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; backdrop-filter: blur(10px); }
+.spinner { width: 40px; height: 40px; border: 4px solid var(--border-light); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+#loader-text { color: var(--text-muted); font-weight: 600; letter-spacing: 1px; }
 
-#crossword-grid td.letter-cell.highlight-cell {
-    background-color: #fde047; /* Yellow for active cell */
-}
+/* Entry Screen */
+.entry-card { background: var(--card-bg); border: 1px solid var(--border-light); padding: 30px 20px; border-radius: 30px; max-width: 450px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; gap: 15px; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; transition: background 0.3s ease;}
+.app-title { font-size: 2.2rem; font-weight: 900; margin: 0; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.subtitle { color: var(--text-muted); margin: 5px 0 20px 0; }
 
-#crossword-grid .cell-number {
-    position: absolute;
-    top: 1px;
-    left: 2px;
-    font-size: 10px;
-    font-weight: bold;
-    color: #333;
-    pointer-events: none;
-}
+.dataset-btn { background: var(--border-light); border: 1px solid var(--border-light); color: var(--text-main); padding: 16px 20px; border-radius: 16px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: 0.2s; text-align: left; display: flex; justify-content: space-between; align-items: center;}
+.dataset-btn:hover { background: var(--border-heavy); border-color: var(--primary); }
+.dataset-btn:active { transform: scale(0.98); }
+.dataset-status { font-size: 0.7rem; color: var(--text-muted); font-weight: 500; text-align: right; margin-left: 10px;}
 
-#crossword-grid input {
-    width: 100%;
-    height: 100%;
-    border: none;
-    background: transparent;
-    text-align: center;
-    font-size: 1.2rem;
-    font-weight: bold;
-    text-transform: uppercase;
-    outline: none;
-    color: var(--text-main);
-    padding-top: 5px; /* Leave space for number */
-}
+.btn-review { background: rgba(244, 63, 94, 0.1); color: var(--error); border: 1px solid rgba(244, 63, 94, 0.3); padding: 16px 20px; border-radius: 16px; font-weight: 800; font-size: 1.1rem; cursor: pointer; width: 100%; margin-top: 10px; display: none; }
 
-/* Sidebar & Clues */
-.crossword-sidebar {
-    width: 350px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    flex-shrink: 0;
-    overflow: hidden;
-}
+.data-controls { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-light);}
+.btn-data { background: transparent; border: 1px solid var(--border-heavy); color: var(--text-muted); padding: 8px 10px; border-radius: 10px; font-size: 0.75rem; cursor: pointer; transition: 0.2s;}
+.btn-data:hover { background: var(--border-light); color: var(--text-main);}
 
-.clue-card {
-    background-color: var(--card-bg);
-    padding: 15px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-}
+/* Dashboard */
+#dashboard { display: none; flex-direction: column; gap: 15px; width: 100%; padding-bottom: 30px; overflow-y: auto; -webkit-overflow-scrolling: touch;}
+.section-title { color: var(--text-main); margin: 5px 0 0 0; font-weight: 800; font-size: 1.1rem; }
+.deck-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.deck-card { background: var(--border-light); border: 1px solid var(--border-light); border-radius: 20px; padding: 15px; text-align: center; cursor: pointer; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; position: relative; overflow: hidden; transition: 0.2s;}
+.deck-card:hover { border-color: var(--primary); background: var(--border-heavy);}
+.deck-letter { font-size: 1rem; font-weight: 800; color: var(--text-main); text-transform: capitalize;}
+.deck-info { font-size: 0.75rem; color: var(--text-muted); font-weight: 500;}
+.deck-progress-bar { width: 80%; height: 4px; background: var(--border-light); border-radius: 5px; overflow: hidden; margin-top: 5px; }
+.deck-progress-fill { height: 100%; background: var(--success); width: 0%; transition: 0.3s;}
 
-.clue-card h3 {
-    font-size: 1rem;
-    color: var(--primary);
-    margin-bottom: 5px;
-}
+/* Stats Bar */
+.stats-bar { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 12px 20px; border-radius: 18px; border: 1px solid var(--border-light); flex-shrink: 0; transition: background 0.3s ease;}
+.stat-group { display: flex; gap: 20px; }
+.stat-item { text-align: center; }
+.stat-label { font-size: 0.6rem; color: var(--text-muted); font-weight: 700; letter-spacing: 1px; display: block; margin-bottom: 2px;}
+.stat-value { font-size: 1.1rem; color: var(--primary); font-weight: 900; }
+.stat-success { color: var(--success) !important; }
+.stat-neutral { color: var(--text-main) !important; }
+.btn-exit { background: var(--border-light); color: var(--text-main); border: none; padding: 8px 12px; border-radius: 10px; cursor: pointer; font-size: 0.8rem; font-weight: 600;}
 
-#current-clue-text {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin-bottom: 10px;
-    width: 100%;
-}
+/* Quiz UI */
+#main-ui { display: none; flex-direction: column; gap: 15px; padding-bottom: 30px;}
+.quiz-card { background: var(--card-bg); border-radius: 25px; border: 1px solid var(--border-light); overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 15px 30px rgba(0,0,0,0.2); transition: background 0.3s ease;}
+.card-left, .card-right { padding: 20px; }
+.card-left { text-align: center; display: flex; flex-direction: column; justify-content: center; position: relative;}
 
-#current-clue-image {
-    max-width: 100%;
-    max-height: 180px;
-    border-radius: 8px;
-    object-fit: cover;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
+#word-display { font-size: clamp(1.4rem, 5vw, 2.8rem); font-weight: 900; margin-bottom: 15px; color: var(--text-main); word-break: break-word; white-space: pre-wrap; line-height: 1.2;}
+.type-badge { background: rgba(56, 189, 248, 0.1); color: var(--primary); font-size: 0.65rem; padding: 4px 8px; border-radius: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: inline-block; margin-bottom: 10px; border: 1px solid rgba(56, 189, 248, 0.3);}
 
-.clue-lists {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    flex: 1;
-    overflow-y: auto;
-    background-color: var(--card-bg);
-    padding: 15px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-}
+/* Hint Image - Updated with pointer for clickability */
+#hint-box { width: 100%; height: 140px; border-radius: 15px; overflow: hidden; display: block; margin-bottom: 10px; background: rgba(0,0,0,0.1); position: relative; cursor: pointer; border: 2px solid transparent; transition: border-color 0.2s;}
+#hint-box:hover { border-color: var(--primary); }
+#hint-img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s; }
 
-.clue-column h3 {
-    font-size: 1rem;
-    border-bottom: 2px solid var(--border);
-    padding-bottom: 5px;
-    margin-bottom: 10px;
-    position: sticky;
-    top: 0;
-    background: var(--card-bg);
-}
+.card-right { display: flex; flex-direction: column; gap: 10px; }
+.option-btn { width: 100%; padding: 15px 18px; border-radius: 16px; background: var(--border-light); border: 1px solid var(--border-light); color: var(--text-main); font-size: 0.95rem; text-align: left; cursor: pointer; transition: 0.2s; line-height: 1.4;}
+.option-btn:hover { background: var(--border-heavy); }
+.correct { background: var(--success) !important; color: #fff !important; font-weight: 700; border-color: var(--success) !important;}
+.wrong { background: var(--error) !important; color: #fff !important; opacity: 0.9; border-color: var(--error) !important;}
 
-.clue-column ul {
-    list-style: none;
-    font-size: 0.9rem;
-}
+.swipe-hint { text-align: center; font-size: 0.75rem; color: var(--text-muted); opacity: 0.6; display: flex; justify-content: space-between; padding: 0 10px;}
 
-.clue-column li {
-    padding: 5px;
-    cursor: pointer;
-    border-radius: 4px;
-    margin-bottom: 2px;
-}
-
-.clue-column li:hover {
-    background-color: var(--bg-color);
-}
-
-.clue-column li.active-clue {
-    background-color: #e0f2fe;
-    font-weight: 600;
-}
-
-/* ==========================================
-   RESPONSIVE DESIGN
-   ========================================== */
-@media (max-width: 768px) {
-    header {
-        flex-direction: column;
-        gap: 10px;
-    }
-    
-    .crossword-layout {
-        flex-direction: column;
-    }
-    
-    .crossword-sidebar {
-        width: 100%;
-        max-height: 40vh; /* Keep grid visible on mobile */
-    }
-    
-    .clue-lists {
-        flex-direction: row; /* Side-by-side clues on mobile */
-    }
-    
-    .clue-column {
-        flex: 1;
-        overflow-y: auto;
-    }
-    
-    #crossword-grid td {
-        width: 30px;
-        height: 30px;
-    }
-    
-    #crossword-grid input {
-        font-size: 1rem;
-    }
+@media (min-width: 800px) {
+    .quiz-card { flex-direction: row; min-height: 450px; }
+    .card-left { width: 45%; border-right: 1px solid var(--border-light); }
+    .card-right { width: 55%; padding-left: 30px; justify-content: center; }
+    #hint-box { height: 200px;}
 }

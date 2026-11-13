@@ -2,142 +2,800 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Vocabulary PWA</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#ffffff">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>GRE Elite</title>
+    <style>
+        :root {
+            --bg-dark: #09090b; --card-bg: rgba(24, 24, 27, 0.7);
+            --primary: #38bdf8; --secondary: #818cf8;
+            --accent: #f472b6; --success: #10b981;
+            --error: #f43f5e; --text-main: #f8fafc; --text-muted: #94a3b8;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: radial-gradient(circle at top center, #1e1b4b, var(--bg-dark));
+            background-attachment: fixed; color: var(--text-main); margin: 0; padding: 0;
+            display: flex; justify-content: center; align-items: flex-start; min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Pseudo-Fullscreen Fallback for Google Sites restriction */
+        body.pseudo-fullscreen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; z-index: 99999; margin: 0; padding: 0; overflow: hidden; border-radius: 0; }
+        body.pseudo-fullscreen .app-container { margin-top: 0; max-width: 100%; padding: 10px; height: 100%; display: flex; flex-direction: column;}
+        body.pseudo-fullscreen #main-ui { flex-grow: 1; display: flex; flex-direction: column; }
+        body.pseudo-fullscreen .quiz-card { flex-grow: 1; }
+
+        .app-container { width: 100%; max-width: 1000px; padding: 15px; display: flex; flex-direction: column; gap: 15px; margin-top: env(safe-area-inset-top, 15px); }
+        
+        .fullscreen-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-dark); z-index: 200; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; backdrop-filter: blur(10px); background: rgba(9, 9, 11, 0.95); }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .entry-card { background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1); padding: 30px 20px; border-radius: 30px; max-width: 450px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; gap: 15px; max-height: 90vh; overflow-y: auto;}
+        .app-title { font-size: 2.2rem; font-weight: 900; margin: 0; background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .dataset-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 16px 20px; border-radius: 16px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: 0.2s; text-align: left; display: flex; justify-content: space-between; align-items: center;}
+        .dataset-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--primary); }
+        .dataset-btn:active { transform: scale(0.98); }
+        .dataset-status { font-size: 0.7rem; color: var(--text-muted); font-weight: 500; text-align: right; margin-left: 10px;}
+        
+        .btn-review { background: rgba(244, 63, 94, 0.1); color: var(--error); border: 1px solid rgba(244, 63, 94, 0.3); padding: 16px 20px; border-radius: 16px; font-weight: 800; font-size: 1.1rem; cursor: pointer; width: 100%; margin-top: 10px; display: none; }
+        
+        .data-controls { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);}
+        .btn-data { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: var(--text-muted); padding: 8px 10px; border-radius: 10px; font-size: 0.75rem; cursor: pointer; transition: 0.2s;}
+        .btn-data:hover { background: rgba(255,255,255,0.05); color: white;}
+
+        #dashboard { display: none; flex-direction: column; gap: 15px; width: 100%; padding-bottom: 30px;}
+        .deck-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+        .deck-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 15px; text-align: center; cursor: pointer; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; position: relative; overflow: hidden;}
+        .deck-card:hover { border-color: var(--primary); background: rgba(255,255,255,0.06);}
+        .deck-letter { font-size: 1rem; font-weight: 800; color: #fff; text-transform: capitalize;}
+        .deck-info { font-size: 0.75rem; color: var(--text-muted); font-weight: 500;}
+        .deck-progress-bar { width: 80%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 5px; overflow: hidden; margin-top: 5px; }
+        .deck-progress-fill { height: 100%; background: var(--success); width: 0%; transition: 0.3s;}
+
+        .stats-bar { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 12px 20px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.05); }
+        .stat-group { display: flex; gap: 20px; }
+        .stat-item { text-align: center; }
+        .stat-label { font-size: 0.6rem; color: var(--text-muted); font-weight: 700; letter-spacing: 1px; display: block; margin-bottom: 2px;}
+        .stat-value { font-size: 1.1rem; color: var(--primary); font-weight: 900; }
+        .btn-exit { background: rgba(255,255,255,0.1); color: white; border: none; padding: 8px 12px; border-radius: 10px; cursor: pointer; font-size: 0.8rem; font-weight: 600;}
+        
+        #main-ui { display: none; flex-direction: column; gap: 15px; padding-bottom: 30px;}
+        .quiz-card { background: var(--card-bg); border-radius: 25px; border: 1px solid rgba(255,255,255,0.08); overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 15px 30px rgba(0,0,0,0.4);}
+        .card-left, .card-right { padding: 20px; }
+        .card-left { text-align: center; display: flex; flex-direction: column; justify-content: center; position: relative;}
+        
+        #word-display { font-size: clamp(1.4rem, 5vw, 2.8rem); font-weight: 900; margin-bottom: 15px; color: #fff; word-break: break-word; white-space: pre-wrap; line-height: 1.2;}
+        .type-badge { background: rgba(56, 189, 248, 0.1); color: var(--primary); font-size: 0.65rem; padding: 4px 8px; border-radius: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: inline-block; margin-bottom: 10px; border: 1px solid rgba(56, 189, 248, 0.3);}
+        
+        #hint-box { width: 100%; height: 140px; border-radius: 15px; overflow: hidden; display: block; margin-bottom: 10px; background: rgba(0,0,0,0.3); position: relative; display: flex; align-items: center; justify-content: center;}
+        #hint-img { max-width: 100%; max-height: 100%; object-fit: contain; opacity: 0; transition: opacity 0.3s; }
+        
+        .card-right { display: flex; flex-direction: column; gap: 10px; }
+        .option-btn { width: 100%; padding: 15px 18px; border-radius: 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: var(--text-main); font-size: 0.95rem; text-align: left; cursor: pointer; transition: 0.2s; line-height: 1.4;}
+        .correct { background: var(--success) !important; color: #fff; font-weight: 700; border-color: var(--success) !important;}
+        .wrong { background: var(--error) !important; color: #fff; opacity: 0.9; border-color: var(--error) !important;}
+        
+        .swipe-hint { text-align: center; font-size: 0.75rem; color: var(--text-muted); opacity: 0.6; display: flex; justify-content: space-between; padding: 0 10px;}
+
+        @media (min-width: 800px) {
+            .quiz-card { flex-direction: row; min-height: 450px; }
+            .card-left { width: 45%; border-right: 1px solid rgba(255,255,255,0.05); }
+            .card-right { width: 55%; padding-left: 30px; justify-content: center; }
+            #hint-box { height: 200px;}
+        }
+    </style>
 </head>
 <body>
-    <!-- App Loading & Entry Screens -->
-    <div id="loader" style="display:flex; justify-content:center; align-items:center; height:100vh;">
-        <h2>Loading Data...</h2>
-    </div>
-    
-    <div id="entry-screen" class="hidden" style="display:none; flex-direction:column; align-items:center; justify-content:center; height:100vh; padding: 20px;">
-        <h1 style="color: var(--primary); margin-bottom: 20px;">Vocab Builder</h1>
-        <div id="dataset-list" style="display:flex; flex-direction:column; gap: 15px; width: 100%; max-width: 400px;"></div>
+
+    <div id="loader" class="fullscreen-overlay">
+        <div class="spinner" id="spinner-icon"></div>
+        <p id="loader-text" style="color: var(--text-muted); font-weight: 600; letter-spacing: 1px;">INITIALIZING APP...</p>
     </div>
 
-    <!-- Dashboard Screen -->
-    <div id="dashboard" class="hidden" style="display:none; flex-direction:column; padding: 20px; max-width: 1000px; margin: 0 auto;">
-        <header style="box-shadow:none; padding: 0 0 20px 0;">
-            <h1>Dashboard</h1>
-            <button id="btn-reload" style="display:none;">Reload</button>
-        </header>
-        <div style="display:flex; gap: 15px; margin-bottom: 20px; font-weight: bold; color: var(--text-main);">
-            <div>Score: <span id="dash-score" style="color: var(--primary);">0</span></div>
-            <div>Streak: <span id="streak" style="color: var(--primary);">0</span></div>
-            <div>Mastered: <span id="dash-mastered" style="color: var(--primary);">0</span></div>
-            <div id="dash-review-mistakes" style="display:none; cursor: pointer; color: var(--wrong);" onclick="enterApp('memory')">
-                Review Mistakes: <span id="dash-mistake-count">0</span>
+    <div id="entry-screen" class="fullscreen-overlay" style="display:none; z-index: 150;">
+        <div class="entry-card">
+            <div>
+                <h1 class="app-title">GRE Elite</h1>
+                <p style="color: var(--text-muted); margin: 5px 0 20px 0;">Select your study library.</p>
+            </div>
+            
+            <div id="dataset-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+
+            <div class="data-controls">
+                <button class="btn-data" onclick="exportData()">沈 Save Offline Backup</button>
+                <button class="btn-data" onclick="document.getElementById('file-upload').click()">唐 Load Backup</button>
+                <button class="btn-data" onclick="forceRefreshLibrary()" id="btn-reload" style="display:none;">売 Force Update Dataset</button>
+                <input type="file" id="file-upload" style="display:none" accept=".json,application/json,text/plain,*/*" onchange="importData(event)">
             </div>
         </div>
-        <div id="deck-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;"></div>
     </div>
 
-    <!-- Main UI (Tabs & Modes) -->
-    <div id="main-ui" style="display:none; flex-direction:column; height:100vh;">
-        <header>
-            <h1>Vocab Builder</h1>
-            <nav>
-                <button id="nav-flashcards" class="active">Flashcards</button>
-                <button id="nav-search">Dictionary</button>
-                <button id="nav-crossword">Crossword</button>
-            </nav>
-            <select id="dataset-selector">
-                <option value="barron800">Barron's 800</option>
-                <option value="barron1500">Barron's 1500</option>
-                <option value="gre3000">GRE 3000</option>
-                <option value="gre5349">GRE Master 5349</option>
-                <option value="idioms">Master Idioms</option>
-            </select>
-        </header>
+    <div class="app-container">
+        <div id="dashboard">
+            <div class="stats-bar">
+                <div class="stat-group">
+                    <div class="stat-item"><span class="stat-label">SCORE</span><div id="dash-score" class="stat-value">0</div></div>
+                    <div class="stat-item"><span class="stat-label">MASTERED</span><div id="dash-mastered" class="stat-value" style="color: var(--success);">0</div></div>
+                </div>
+                <div class="stat-item" style="text-align: right;">
+                    <span class="stat-label" id="dash-dataset-name">LIBRARY</span><div id="dash-total" class="stat-value" style="color: var(--text-main);">0</div>
+                </div>
+            </div>
 
-        <main id="touch-surface">
-            <!-- Flashcard Mode -->
-            <section id="mode-flashcards" class="view-section active">
-                <div style="text-align:center; margin-bottom:10px;">
-                    <span id="question-type-badge" style="display:none; background:var(--primary); color:white; padding:4px 10px; border-radius:12px; font-size:0.8rem; font-weight:bold;"></span>
-                </div>
-                
-                <div class="flashcard" id="flashcard">
-                    <div class="front">
-                        <h2 id="word-display">Loading...</h2>
-                    </div>
-                    <div class="back hidden" id="definition-display">
-                        <p id="word-def"></p>
-                        <p id="word-context" class="context"></p>
-                    </div>
-                    
-                    <!-- Native Google Image Search Button Container for Flashcards -->
-                    <div id="hint-box" style="margin-top: 20px; width: 100%;"></div>
-                </div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <h3 style="color: #fff; margin: 5px 0 0 0; font-weight: 800; font-size: 1.1rem;">Study Decks</h3>
+                <button class="btn-data" style="margin:0;" onclick="showEntryScreen()">Change Library</button>
+            </div>
 
-                <div id="options-list" style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px; width: 100%; max-width: 600px; margin-left: auto; margin-right: auto;"></div>
-                
-                <div class="controls">
-                    <button id="btn-prev">Previous</button>
-                    <button id="btn-flip">Flip</button>
-                    <button id="btn-next">Next</button>
-                </div>
-            </section>
+            <button class="btn-review" id="dash-review-mistakes" onclick="enterApp('memory')" style="margin-top: 0; display: none;">
+                Review <span id="dash-mistake-count">0</span> Focus Words
+            </button>
 
-            <!-- Dictionary Search Mode -->
-            <section id="mode-search" class="view-section hidden">
-                <input type="text" id="search-input" placeholder="Search vocabulary...">
-                <ul id="search-results"></ul>
-            </section>
+            <div id="deck-container" class="deck-grid"></div>
+        </div>
 
-            <!-- Crossword Mode -->
-            <section id="mode-crossword" class="view-section hidden">
-                <div class="crossword-controls">
-                    <button id="btn-load-crossword">Fetch Crossword from GitHub</button>
-                    <span id="crossword-status"></span>
+        <div id="main-ui">
+            <div class="stats-bar">
+                <div class="stat-group">
+                    <div class="stat-item"><span class="stat-label">SCORE</span><div id="score" class="stat-value">0</div></div>
+                    <div class="stat-item"><span class="stat-label">STREAK</span><div id="streak" class="stat-value">0</div></div>
                 </div>
-                
-                <div class="crossword-layout">
-                    <div id="crossword-grid" class="grid-container">
-                        <!-- Grid cells generated dynamically via JS -->
-                    </div>
-                    
-                    <div class="crossword-sidebar">
-                        <div id="active-clue-display" class="clue-card">
-                            <h3>Current Clue</h3>
-                            <p id="current-clue-text">Select a cell to view clue.</p>
-                            
-                            <!-- Hidden image tag to satisfy JS logic, replaced dynamically with Search Button -->
-                            <img id="current-clue-image" class="hidden" src="" alt="Clue context" style="display:none;">
-                            <div id="google-img-search-btn"></div>
-                        </div>
-                        
-                        <div class="clue-lists">
-                            <div class="clue-column">
-                                <h3>Across</h3>
-                                <ul id="clues-across"></ul>
-                            </div>
-                            <div class="clue-column">
-                                <h3>Down</h3>
-                                <ul id="clues-down"></ul>
-                            </div>
-                        </div>
-                    </div>
+                <button class="btn-exit" onclick="exitToDashboard()">Exit Deck</button>
+            </div>
+
+            <div class="quiz-card" id="touch-surface">
+                <div class="card-left">
+                    <div class="type-badge" id="question-type-badge" style="display:none;">Definition</div>
+                    <div id="word-display">WORD</div>
+                    <div id="hint-box"><img id="hint-img" src="" alt="hint"></div>
                 </div>
-            </section>
-        </main>
+                <div class="card-right" id="options-list">
+                    </div>
+            </div>
+            <div class="swipe-hint">
+                <span>争 Swipe Back</span>
+                <span>Swipe Next 痩</span>
+            </div>
+        </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="data.js"></script>
-    <script src="app.js"></script>
     <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').catch(err => {
-                    console.log('ServiceWorker registration failed: ', err);
-                });
+        // ==========================================
+        // CONFIGURATION: EXACT MATCH TO YOUR UPLOADS
+        // ==========================================
+        const DATASETS = [
+            { id: 'barron800', name: 'Barron\'s 800', file: 'barron800.csv' },
+            { id: 'barron1500', name: 'Barron\'s 1500', file: 'barron1500.csv' },
+            { id: 'gre3000', name: 'GRE 3000', file: 'gre3000.csv' },
+            { id: 'verbal418', name: 'Verbal Builder 5000', file: 'GRE Master Wordlist 5349.csv' },
+            { id: 'idioms', name: 'Master Idioms', file: 'Master_Idioms_Database.csv' }
+        ];
+
+        // ==========================================
+        // 1. STRONG INDEXED-DB PERSISTENCE ENGINE
+        // ==========================================
+        const DB_NAME = 'GRE_Elite_Database';
+        const DB_VERSION = 1;
+        
+        let dbInstance = null;
+        let activeDatasetId = null; 
+        
+        let appData = { progress: {}, caches: {} };
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                if (dbInstance) return resolve(dbInstance);
+                let request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    let db = e.target.result;
+                    if (!db.objectStoreNames.contains('app_storage')) db.createObjectStore('app_storage');
+                };
+                request.onsuccess = (e) => { dbInstance = e.target.result; resolve(dbInstance); };
+                request.onerror = (e) => reject(e);
             });
         }
+
+        async function loadData() {
+            try {
+                let db = await initDB();
+                let tx = db.transaction('app_storage', 'readonly');
+                let request = tx.objectStore('app_storage').get('master_save');
+                
+                request.onsuccess = () => {
+                    if (request.result) {
+                        appData = request.result;
+                        if (!appData.progress) appData.progress = {};
+                        if (!appData.caches) appData.caches = {};
+                    }
+                };
+            } catch (e) { console.error("IDB Load Error:", e); }
+        }
+
+        async function saveData() {
+            try {
+                let db = await initDB();
+                let tx = db.transaction('app_storage', 'readwrite');
+                tx.objectStore('app_storage').put(appData, 'master_save');
+                updateDashStats();
+            } catch (e) { console.error("IDB Save Error:", e); }
+        }
+
+        function exportData() {
+            var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData));
+            var dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", "GRE_Master_Backup.json");
+            dlAnchorElem.click();
+        }
+
+        function importData(event) {
+            var file = event.target.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    var imported = JSON.parse(e.target.result);
+                    if (imported.progress) {
+                        appData = imported;
+                        await saveData();
+                        alert("Backup Successfully Restored!");
+                        window.location.reload();
+                    } else throw new Error("Invalid Format");
+                } catch(err) { alert("Invalid save file."); }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- 2. STATE VARIABLES ---
+        var master = [], decks = [], activeDeck = [];
+        var historyArray = [], historyIndex = -1;
+        var currentMode = 'normal'; 
+        var canAnswer = true;
+        var currentDeckLabel = "";
+        var currentQuestionTarget = null; 
+
+        // --- 3. BOOT & DATASET SELECTION ---
+        window.onload = async function() {
+            await loadData();
+            buildDatasetMenu();
+        };
+
+        function buildDatasetMenu() {
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('entry-screen').style.display = 'flex';
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('main-ui').style.display = 'none';
+            document.getElementById('btn-reload').style.display = 'none';
+
+            let listContainer = document.getElementById('dataset-list');
+            listContainer.style.display = 'flex'; 
+            listContainer.innerHTML = '';
+
+            DATASETS.forEach(ds => {
+                let isCached = appData.caches && appData.caches[ds.id];
+                let progress = appData.progress[ds.id] || {};
+                let score = progress.score || 0;
+                let statusText = isCached ? `Score: ${score}` : "Requires Download";
+                
+                let btn = document.createElement('button');
+                btn.className = 'dataset-btn';
+                btn.innerHTML = `<span>${ds.name}</span> <span class="dataset-status">${statusText}</span>`;
+                btn.onclick = () => { selectDataset(ds.id); };
+                listContainer.appendChild(btn);
+            });
+        }
+
+        function showEntryScreen() {
+            enforceFullscreen();
+            buildDatasetMenu();
+        }
+
+        function selectDataset(id) {
+            enforceFullscreen();
+            activeDatasetId = id;
+            
+            if (!appData.progress[activeDatasetId]) {
+                appData.progress[activeDatasetId] = { score: 0, streak: 0, mistakes: [], mastered: [], deckStates: {} };
+                saveData();
+            }
+
+            document.getElementById('dataset-list').style.display = 'none';
+            document.getElementById('btn-reload').style.display = 'inline-block';
+
+            if (appData.caches[activeDatasetId]) {
+                parseAndChunk(appData.caches[activeDatasetId]);
+                document.getElementById('dashboard').style.display = 'flex';
+                document.getElementById('entry-screen').style.display = 'none';
+            } else {
+                forceRefreshLibrary(); 
+            }
+        }
+
+        function forceRefreshLibrary() {
+            if(!activeDatasetId) return;
+            let dsInfo = DATASETS.find(d => d.id === activeDatasetId);
+            
+            document.getElementById('entry-screen').style.display = 'none';
+            document.getElementById('loader').style.display = 'flex';
+            document.getElementById('loader-text').innerText = `DOWNLOADING ${dsInfo.name.toUpperCase()}...`;
+
+            fetch(dsInfo.file)
+                .then(response => {
+                    if (!response.ok) throw new Error("File not found on server.");
+                    return response.text();
+                })
+                .then(text => {
+                    appData.caches[activeDatasetId] = text;
+                    saveData();
+                    parseAndChunk(text);
+                    document.getElementById('loader').style.display = 'none';
+                    document.getElementById('dashboard').style.display = 'flex';
+                })
+                .catch(err => {
+                    document.getElementById('spinner-icon').style.display = 'none';
+                    document.getElementById('loader-text').innerHTML = `<span style='color: var(--error);'>ERROR: ${err.message}. Ensure '${dsInfo.file}' is uploaded exactly as named.</span><br><br><button class="btn-data" onclick="buildDatasetMenu()">Return</button>`;
+                });
+        }
+
+        // --- 4. SMART TSV/CSV PARSING ---
+        function parseAndChunk(raw) {
+            master = []; 
+            let rows = [];
+            let row = [];
+            let current = '';
+            let inQuotes = false;
+            
+            let delimiter = raw.indexOf('\t') !== -1 ? '\t' : ',';
+            
+            for (let i = 0; i < raw.length; i++) {
+                let char = raw[i];
+                if (inQuotes) {
+                    if (char === '"') {
+                        if (i + 1 < raw.length && raw[i + 1] === '"') {
+                            current += '"'; i++; 
+                        } else {
+                            inQuotes = false;
+                        }
+                    } else {
+                        current += char;
+                    }
+                } else {
+                    if (char === '"') {
+                        inQuotes = true;
+                    } else if (char === delimiter) {
+                        row.push(current.trim());
+                        current = '';
+                    } else if (char === '\n' || char === '\r') {
+                        row.push(current.trim());
+                        if (row.length > 0 && row[0] !== '') rows.push(row);
+                        row = [];
+                        current = '';
+                        if (char === '\r' && i + 1 < raw.length && raw[i + 1] === '\n') i++; 
+                    } else {
+                        current += char;
+                    }
+                }
+            }
+            if (current !== '' || row.length > 0) {
+                row.push(current.trim());
+                if (row.length > 0 && row[0] !== '') rows.push(row);
+            }
+
+            for (let i = 0; i < rows.length; i++) { 
+                let word = rows[i][0];
+                let def = rows[i][1];
+                let extra = rows[i][2] || '';
+                
+                if(word && def) {
+                    word = word.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').replace(/^"|"$/g, '').trim();
+                    def = def.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').replace(/^"|"$/g, '').trim();
+                    extra = extra.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').replace(/^"|"$/g, '').trim();
+
+                    if (word.length > 1 && def.length > 1 && word.toLowerCase() !== "word" && word.toLowerCase() !== "idiom") {
+                        master.push({ word: word, def: def, extra: extra });
+                    }
+                }
+            }
+
+            let dsInfo = DATASETS.find(d => d.id === activeDatasetId);
+            document.getElementById('dash-dataset-name').innerText = dsInfo.name.toUpperCase();
+            document.getElementById('dash-total').innerText = master.length;
+            master.sort(function(a, b) { return a.word.localeCompare(b.word); });
+
+            var minSize = Math.max(10, Math.ceil(master.length * 0.005)); 
+            var targetMax = Math.max(60, minSize * 2); 
+
+            var letterGroups = {};
+            master.forEach(function(item) {
+                var letter = item.word.charAt(0).toUpperCase();
+                if (!letter.match(/[A-Z]/)) letter = '#';
+                if (!letterGroups[letter]) letterGroups[letter] = [];
+                letterGroups[letter].push(item);
+            });
+
+            decks = [];
+            Object.keys(letterGroups).sort().forEach(function(l) {
+                var wordsInLetter = letterGroups[l];
+                if (wordsInLetter.length <= targetMax) {
+                    var startWord = wordsInLetter[0].word.substring(0,3);
+                    var endWord = wordsInLetter[wordsInLetter.length-1].word.substring(0,3);
+                    decks.push({ label: `${startWord} - ${endWord}`, words: wordsInLetter });
+                } else {
+                    var numChunks = Math.ceil(wordsInLetter.length / targetMax);
+                    var exactSize = Math.ceil(wordsInLetter.length / numChunks);
+                    for (var i = 0; i < numChunks; i++) {
+                        var chunk = wordsInLetter.slice(i * exactSize, (i + 1) * exactSize);
+                        if (chunk.length > 0) {
+                            var startWord = chunk[0].word.substring(0,3);
+                            var endWord = chunk[chunk.length-1].word.substring(0,3);
+                            decks.push({ label: `${startWord} - ${endWord}`, words: chunk });
+                        }
+                    }
+                }
+            });
+
+            updateDashStats();
+            renderDecks();
+        }
+
+        function renderDecks() {
+            var container = document.getElementById('deck-container');
+            container.innerHTML = '';
+            let pData = appData.progress[activeDatasetId];
+
+            decks.forEach(function(d, index) {
+                var masteredInDeck = d.words.filter(w => pData.mastered.includes(w.word)).length;
+                var progressPct = Math.min(100, (masteredInDeck / d.words.length) * 100);
+
+                var div = document.createElement('div');
+                div.className = 'deck-card';
+                div.innerHTML = `
+                    <div class="deck-letter">${d.label}</div>
+                    <div class="deck-info">${masteredInDeck} / ${d.words.length}</div>
+                    <div class="deck-progress-bar"><div class="deck-progress-fill" style="width: ${progressPct}%"></div></div>
+                `;
+                div.onclick = function() { startDeck(index); };
+                container.appendChild(div);
+            });
+        }
+
+        // --- DASHBOARD UI UPDATES & FOCUS MODE TOGGLE ---
+        function updateDashStats() {
+            if(!activeDatasetId) return;
+            let pData = appData.progress[activeDatasetId];
+            document.getElementById('dash-score').innerText = pData.score;
+            document.getElementById('score').innerText = pData.score;
+            document.getElementById('streak').innerText = pData.streak;
+            document.getElementById('dash-mastered').innerText = pData.mastered.length;
+
+            // Handle Focus Mode Button Visibility
+            let mistakeBtn = document.getElementById('dash-review-mistakes');
+            if (pData.mistakes && pData.mistakes.length > 0) {
+                document.getElementById('dash-mistake-count').innerText = pData.mistakes.length;
+                mistakeBtn.style.display = 'block';
+            } else {
+                mistakeBtn.style.display = 'none';
+            }
+        }
+
+        // --- 5. AGGRESSIVE FULLSCREEN & GOOGLE SITES FALLBACK ---
+        function enforceFullscreen() {
+            var doc = window.document;
+            var docEl = doc.documentElement;
+            var req = docEl.requestFullscreen || docEl.webkitRequestFullscreen;
+            
+            if (!doc.fullscreenElement && !doc.webkitFullscreenElement) {
+                if(req) {
+                    req.call(docEl).catch(err => {
+                        document.body.classList.add('pseudo-fullscreen');
+                    });
+                } else {
+                    document.body.classList.add('pseudo-fullscreen');
+                }
+            } else {
+                document.body.classList.remove('pseudo-fullscreen');
+            }
+        }
+
+        document.body.addEventListener('touchstart', enforceFullscreen, { passive: true });
+        document.body.addEventListener('click', enforceFullscreen, { passive: true });
+
+        // --- 6. NAVIGATION & ENGINE ---
+        function enterApp(mode) {
+            enforceFullscreen();
+            
+            if (mode === 'memory') {
+                let pData = appData.progress[activeDatasetId];
+                activeDeck = master.filter(function(w) { return pData.mistakes.includes(w.word); });
+                currentMode = 'memory';
+                
+                // Switch from Dashboard to Quiz UI
+                document.getElementById('dashboard').style.display = 'none';
+                document.getElementById('main-ui').style.display = 'flex';
+                historyArray = []; historyIndex = -1;
+                generateQuestion();
+            }
+        }
+
+        function startDeck(index) {
+            enforceFullscreen();
+            let pData = appData.progress[activeDatasetId];
+            currentDeckLabel = decks[index].label;
+            currentMode = 'normal';
+            historyArray = []; 
+            historyIndex = -1;
+
+            if (pData.deckStates[currentDeckLabel] && pData.deckStates[currentDeckLabel].length > 0) {
+                activeDeck = [];
+                pData.deckStates[currentDeckLabel].forEach(function(wordStr) {
+                    var found = master.find(function(w) { return w.word === wordStr; });
+                    if (found) activeDeck.push(found);
+                });
+                if(activeDeck.length === 0) activeDeck = decks[index].words.slice().sort(function() { return Math.random() - 0.5; });
+            } else {
+                activeDeck = decks[index].words.slice(); 
+                activeDeck.sort(function() { return Math.random() - 0.5; });
+            }
+            
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('main-ui').style.display = 'flex';
+            
+            generateQuestion();
+        }
+
+        function exitToDashboard() {
+            enforceFullscreen();
+            let pData = appData.progress[activeDatasetId];
+            
+            if (currentMode === 'normal') {
+                if (canAnswer && currentQuestionTarget) activeDeck.push(currentQuestionTarget);
+                if (activeDeck.length === 0) delete pData.deckStates[currentDeckLabel];
+                else pData.deckStates[currentDeckLabel] = activeDeck.map(function(w){return w.word;});
+                saveData();
+            }
+
+            document.getElementById('main-ui').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'flex';
+            renderDecks(); 
+            updateDashStats(); // Ensure Focus button updates immediately upon exiting
+        }
+
+        // --- DYNAMIC CLEANER (SUPPORTS CUSTOM BLANKS) ---
+        function clean(text, wordToRemove, blankStyle = "...") {
+            if (!text) return "No data.";
+            var c = text.replace(/<[^>]*>?/gm, ' '); 
+            c = c.split(/(?:syn\.|ant\.)/i)[0];
+            
+            if (wordToRemove) {
+                try {
+                    let safeWord = wordToRemove.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    c = c.replace(new RegExp(safeWord, 'gi'), blankStyle);
+                } catch(e) {}
+            }
+            
+            return c.replace(/\s+/g, ' ').trim().replace(/^[;,\-:\.]+|[;,\-:\.]+$/g, "");
+        }
+
+        function goNext() {
+            enforceFullscreen();
+            if (historyIndex < historyArray.length - 1) {
+                historyIndex++;
+                displayQuestion(historyArray[historyIndex]);
+            } else generateQuestion();
+        }
+
+        function goBack() {
+            enforceFullscreen();
+            if (historyIndex > 0) {
+                historyIndex--;
+                displayQuestion(historyArray[historyIndex]);
+            }
+        }
+
+        function generateQuestion() {
+            if (activeDeck.length === 0) {
+                alert("Deck complete!");
+                exitToDashboard();
+                return;
+            }
+
+            canAnswer = false; 
+            currentQuestionTarget = activeDeck.pop(); 
+            
+            let qMode = 0; 
+            let badgeText = "Definition";
+            if (activeDatasetId === 'idioms') {
+                let r = Math.random();
+                if (r < 0.33) { qMode = 1; badgeText = "Find the Idiom"; }
+                else if (r < 0.66 && currentQuestionTarget.extra) { qMode = 2; badgeText = "Complete Context"; }
+                else { qMode = 0; badgeText = "Meaning"; }
+            }
+
+            let displayPrompt = currentQuestionTarget.word;
+            let targetOptionText = clean(currentQuestionTarget.def, currentQuestionTarget.word, "...");
+
+            if (qMode === 1) {
+                displayPrompt = clean(currentQuestionTarget.def, currentQuestionTarget.word, "____");
+                targetOptionText = currentQuestionTarget.word;
+            } else if (qMode === 2) {
+                displayPrompt = `"${clean(currentQuestionTarget.extra, currentQuestionTarget.word, "____")}"`;
+                targetOptionText = currentQuestionTarget.word;
+            }
+
+            var options = [{ text: targetOptionText, isCorrect: true }];
+
+            let targetLen = targetOptionText.length;
+            let distractorPool = [];
+            
+            for(let i=0; i<40; i++) {
+                let rItem = master[Math.floor(Math.random() * master.length)];
+                if (rItem.word !== currentQuestionTarget.word) {
+                    distractorPool.push(rItem);
+                }
+            }
+
+            distractorPool.sort((a,b) => {
+                let lenA = (qMode === 1 || qMode === 2) ? a.word.length : a.def.length;
+                let lenB = (qMode === 1 || qMode === 2) ? b.word.length : b.def.length;
+                return Math.abs(lenA - targetLen) - Math.abs(lenB - targetLen);
+            });
+
+            for(let i=0; i<distractorPool.length && options.length < 4; i++) {
+                let rItem = distractorPool[i];
+                let dText = (qMode === 1 || qMode === 2) ? rItem.word : clean(rItem.def, rItem.word, "...");
+                if (dText && dText.length > 1 && !options.find(o => o.text === dText)) {
+                    options.push({ text: dText, isCorrect: false });
+                }
+            }
+
+            let attempts = 0;
+            while(options.length < 4 && attempts < 100) {
+                attempts++;
+                let rItem = master[Math.floor(Math.random() * master.length)];
+                let dText = (qMode === 1 || qMode === 2) ? rItem.word : clean(rItem.def, rItem.word, "...");
+                if (dText && dText.length > 1 && !options.find(o => o.text === dText)) {
+                    options.push({ text: dText, isCorrect: false });
+                }
+            }
+
+            while(options.length < 4) {
+                options.push({ text: "None of the above", isCorrect: false });
+            }
+
+            options.sort(function() { return Math.random() - 0.5; });
+            
+            var questionObj = { 
+                target: currentQuestionTarget, 
+                wordRef: currentQuestionTarget.word,
+                displayPrompt: displayPrompt, 
+                badgeText: badgeText,
+                options: options 
+            };
+            
+            historyArray.push(questionObj);
+            historyIndex++;
+            displayQuestion(questionObj);
+        }
+
+        function displayQuestion(qObj) {
+            canAnswer = true;
+            enforceFullscreen(); 
+            
+            let badge = document.getElementById('question-type-badge');
+            if (activeDatasetId === 'idioms') {
+                badge.style.display = 'inline-block';
+                badge.innerText = qObj.badgeText;
+            } else {
+                badge.style.display = 'none';
+            }
+
+            document.getElementById('word-display').innerText = qObj.displayPrompt;
+            
+            // --- UPDATED IMAGE ENGINE: Definition Meaning Extractor ---
+            var hintImg = document.getElementById('hint-img');
+            hintImg.style.opacity = '0'; 
+
+            var tempImg = new Image();
+
+            tempImg.onload = function() { 
+                hintImg.src = tempImg.src; 
+                hintImg.style.opacity = '1'; 
+            };
+
+            // Safest Fallback Option: If image fails or definition parsing breaks
+            tempImg.onerror = function() {
+                this.onerror = null; 
+                this.src = "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/Books/3D/books_3d.png";
+            };
+
+            // Step 1: Clean the definition text
+            let cleanDef = "";
+            if (qObj.target && qObj.target.def) {
+                cleanDef = qObj.target.def.replace(/[^a-zA-Z ]/g, '').toLowerCase();
+            }
+
+            // Step 2: Filter out filler words to find the core meaning
+            let stopWords = ['the', 'and', 'for', 'with', 'about', 'from', 'into', 'that', 'this', 'someone', 'something', 'make', 'have', 'very', 'much', 'without', 'which', 'what', 'when', 'where', 'who', 'how', 'state', 'being', 'quality', 'relating', 'person', 'thing', 'give', 'take', 'like', 'cause', 'action'];
+            
+            let defWords = cleanDef.split(' ').filter(w => w.length > 3 && !stopWords.includes(w));
+
+            // Step 3: Sort by length (longer words usually carry more descriptive visual meaning)
+            defWords.sort((a, b) => b.length - a.length);
+
+            // Step 4: Pick the best word, or fallback to the original vocabulary word
+            let searchKeyword = defWords.length > 0 ? defWords[0] : qObj.wordRef.split(' ')[0].replace(/[^a-zA-Z]/g, '');
+
+            // Step 5: Fetch image with STRICT child-safe context tags (school, study)
+            tempImg.src = `https://loremflickr.com/320/240/school,study,${searchKeyword}?random=${new Date().getTime()}`;
+            
+            // -----------------------------------------------------------
+
+            var list = document.getElementById('options-list');
+            list.innerHTML = '';
+            
+            let pData = appData.progress[activeDatasetId];
+
+            qObj.options.forEach(function(opt) {
+                var b = document.createElement('button');
+                b.className = 'option-btn';
+                b.innerText = opt.text;
+                
+                b.onclick = function() {
+                    enforceFullscreen();
+                    if(!canAnswer) return;
+                    canAnswer = false;
+                    
+                    if(opt.isCorrect) {
+                        b.classList.add('correct');
+                        pData.score += 10; pData.streak++;
+                        if(!pData.mastered.includes(qObj.wordRef)) pData.mastered.push(qObj.wordRef);
+                        
+                        var mIndex = pData.mistakes.indexOf(qObj.wordRef);
+                        if(mIndex > -1) pData.mistakes.splice(mIndex, 1);
+
+                        if (currentMode === 'normal') {
+                            pData.deckStates[currentDeckLabel] = activeDeck.map(function(w){return w.word;});
+                        }
+                        setTimeout(goNext, 800);
+                    } else {
+                        b.classList.add('wrong');
+                        pData.streak = 0;
+                        
+                        if(!pData.mistakes.includes(qObj.wordRef)) pData.mistakes.push(qObj.wordRef);
+                        var mIndex = pData.mastered.indexOf(qObj.wordRef);
+                        if(mIndex > -1) pData.mastered.splice(mIndex, 1);
+
+                        if (currentMode === 'normal') {
+                            activeDeck.push(qObj.target);
+                            pData.deckStates[currentDeckLabel] = activeDeck.map(function(w){return w.word;});
+                        }
+
+                        var allBtns = document.querySelectorAll('.option-btn');
+                        for(var j=0; j<allBtns.length; j++) {
+                            if(allBtns[j].innerText === qObj.options.find(function(o){return o.isCorrect}).text) allBtns[j].classList.add('correct');
+                        }
+                    }
+                    saveData(); 
+                };
+                list.appendChild(b);
+            });
+        }
+
+        /* --- Gestures --- */
+        var touchstartX = 0, touchendX = 0;
+        var touchSurface = document.getElementById('touch-surface');
+        
+        touchSurface.addEventListener('touchstart', function(e) { touchstartX = e.changedTouches[0].screenX; }, {passive: true});
+        touchSurface.addEventListener('touchend', function(e) {
+            touchendX = e.changedTouches[0].screenX;
+            if ((touchstartX - touchendX) > 50) goNext(); 
+            if ((touchstartX - touchendX) < -50) goBack(); 
+        }, {passive: true});
+
     </script>
 </body>
 </html>
